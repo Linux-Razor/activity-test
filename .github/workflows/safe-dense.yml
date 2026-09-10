@@ -1,0 +1,133 @@
+name: Safe Dense Backdate Activity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  safedense:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.repository_owner }}"
+          git config user.email "${{ github.repository_owner }}@users.noreply.github.com"
+
+      - name: Generate backdated commits (progressive density 2019-now)
+        run: |
+          mkdir -p history logs
+
+          echo "Generating 2019 (8 very sparse commits)..."
+          for i in {1..8}; do
+            DATE=$(date -d "2019-01-15 + $((i * 18)) days" +"%Y-%m-%d")
+            echo "Log entry from $DATE" >> logs/2019.log
+            git add logs/2019.log
+            GIT_AUTHOR_DATE="$DATE 10:00:00" GIT_COMMITTER_DATE="$DATE 10:00:00" \
+            git commit -m "docs: 2019 activity log entry $i"
+          done
+
+          echo "Generating 2020 (20 sparse commits)..."
+          for i in {1..20}; do
+            DATE=$(date -d "2020-01-10 + $((i * 12)) days" +"%Y-%m-%d")
+            echo "Log entry from $DATE" >> logs/2020.log
+            git add logs/2020.log
+            GIT_AUTHOR_DATE="$DATE 12:00:00" GIT_COMMITTER_DATE="$DATE 12:00:00" \
+            git commit -m "docs: 2020 activity log entry $i"
+          done
+
+          echo "Generating 2021 (80 moderate commits)..."
+          for i in {1..80}; do
+            DATE=$(date -d "2021-01-01 + $((i * 4)) days" +"%Y-%m-%d")
+            echo "Log entry from $DATE" >> logs/2021.log
+            git add logs/2021.log
+            GIT_AUTHOR_DATE="$DATE 14:00:00" GIT_COMMITTER_DATE="$DATE 14:00:00" \
+            git commit -m "docs: 2021 activity log entry $i"
+          done
+
+          echo "Generating 2022 (450+ dense commits - every day)..."
+          for ((day=0; day<366; day++)); do
+            DATE=$(date -d "2022-01-01 + $day days" +"%Y-%m-%d")
+            NUM_COMMITS=$((1 + (day % 3)))
+            for ((j=1; j<=NUM_COMMITS; j++)); do
+              HOUR=$((j * 7))
+              echo "Entry $j from $DATE" >> logs/2022.log
+              git add logs/2022.log
+              GIT_AUTHOR_DATE="$DATE $HOUR:00:00" GIT_COMMITTER_DATE="$DATE $HOUR:00:00" \
+              git commit -m "docs: 2022 activity #$day-$j"
+            done
+          done
+
+          echo "Generating 2023 (1100+ very dense commits - every day)..."
+          for ((day=0; day<365; day++)); do
+            DATE=$(date -d "2023-01-01 + $day days" +"%Y-%m-%d")
+            NUM_COMMITS=$((2 + (day % 4)))
+            for ((j=1; j<=NUM_COMMITS; j++)); do
+              HOUR=$(( (j * 5) % 24 ))
+              echo "Entry $j from $DATE" >> logs/2023.log
+              git add logs/2023.log
+              GIT_AUTHOR_DATE="$DATE $HOUR:00:00" GIT_COMMITTER_DATE="$DATE $HOUR:00:00" \
+              git commit -m "docs: 2023 activity #$day-$j"
+            done
+          done
+
+          echo "Generating 2024-2026 (700+ extremely dense commits - every day)..."
+          START="2024-01-01"
+          END=$(date +"%Y-%m-%d")
+          CURRENT="$START"
+          while [[ "$CURRENT" < "$END" ]]; do
+            NUM_COMMITS=$((2 + (RANDOM % 5)))
+            for ((j=1; j<=NUM_COMMITS; j++)); do
+              HOUR=$(( (j * 4) % 24 ))
+              echo "Entry $j from $CURRENT" >> logs/current.log
+              git add logs/current.log
+              GIT_AUTHOR_DATE="$CURRENT $HOUR:00:00" GIT_COMMITTER_DATE="$CURRENT $HOUR:00:00" \
+              git commit -m "docs: recent activity #$j"
+            done
+            CURRENT=$(date -d "$CURRENT + 1 day" +"%Y-%m-%d")
+          done
+
+          echo ""
+          echo "✓ All backdated commits created"
+          echo "Pushing to GitHub..."
+
+      - name: Push all commits
+        run: git push
+
+      - name: Create summary issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TOTAL_COMMITS=$(git rev-list --count HEAD)
+          gh issue create \
+            --title "Activity backdate summary" \
+            --body "✓ Backdated activity generated: $TOTAL_COMMITS total commits (2019-now)
+
+            **Distribution:**
+            - 2019: 8 commits (very sparse)
+            - 2020: 20 commits (sparse)
+            - 2021: 80 commits (moderate)
+            - 2022: 450+ commits (dense)
+            - 2023: 1100+ commits (very dense)
+            - 2024-2026: 700+ commits (extremely dense)
+
+            Commits created $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Show summary
+        run: |
+          echo "================================"
+          echo "✓ Workflow Complete"
+          echo "================================"
+          echo "Total commits: $(git rev-list --count HEAD)"
+          echo "Date range: $(git log --all --date=short --format=%cd | tail -1) to $(git log -1 --date=short --format=%cd)"
+          echo "Repository: https://github.com/${{ github.repository }}"
+          echo "================================"
