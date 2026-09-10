@@ -1,0 +1,150 @@
+name: Dense Daily Backdate (2019-Now)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  densedaily:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.repository_owner }}"
+          git config user.email "${{ github.repository_owner }}@users.noreply.github.com"
+
+      - name: Generate dense daily backdated commits
+        shell: bash
+        run: |
+          mkdir -p commits
+          COMMIT_COUNT=0
+
+          # 2019 - Very sparse (2-3 weeks apart, 8 commits total)
+          echo "=== 2019 (Very Sparse) ==="
+          START_DATE="2019-01-15"
+          for i in {1..8}; do
+            CURRENT_DATE=$(date -d "$START_DATE + $((i * 18)) days" +"%Y-%m-%d")
+            for h in {10..12}; do
+              echo "Commit at $CURRENT_DATE $h:00" > "commits/$CURRENT_DATE-$h.txt"
+              git add "commits/$CURRENT_DATE-$h.txt"
+              COMMIT_COUNT=$((COMMIT_COUNT + 1))
+              GIT_AUTHOR_DATE="$CURRENT_DATE $h:00:00" GIT_COMMITTER_DATE="$CURRENT_DATE $h:00:00" \
+              git commit -m "2019 activity #$COMMIT_COUNT"
+              sleep 1
+            done
+          done
+
+          # 2020 - Sparse (1-2 weeks apart, 20 commits)
+          echo "=== 2020 (Sparse) ==="
+          START_DATE="2020-01-10"
+          for i in {1..20}; do
+            CURRENT_DATE=$(date -d "$START_DATE + $((i * 12)) days" +"%Y-%m-%d")
+            COMMITS_TODAY=$((1 + RANDOM % 2))
+            for ((j=1; j<=COMMITS_TODAY; j++)); do
+              HOUR=$((8 + j * 4))
+              echo "Commit at $CURRENT_DATE" > "commits/$CURRENT_DATE-$HOUR.txt"
+              git add "commits/$CURRENT_DATE-$HOUR.txt"
+              COMMIT_COUNT=$((COMMIT_COUNT + 1))
+              GIT_AUTHOR_DATE="$CURRENT_DATE $HOUR:00:00" GIT_COMMITTER_DATE="$CURRENT_DATE $HOUR:00:00" \
+              git commit -m "2020 activity #$COMMIT_COUNT"
+              sleep 1
+            done
+          done
+
+          # 2021 - Moderate (few times a week, ~80 commits)
+          echo "=== 2021 (Few times a week) ==="
+          START_DATE="2021-01-01"
+          DAYS_IN_YEAR=365
+          for ((day=0; day<DAYS_IN_YEAR; day+=3)); do
+            CURRENT_DATE=$(date -d "$START_DATE + $day days" +"%Y-%m-%d")
+            COMMITS_TODAY=$((1 + RANDOM % 2))
+            for ((j=1; j<=COMMITS_TODAY; j++)); do
+              HOUR=$((8 + j * 3))
+              echo "Commit at $CURRENT_DATE" > "commits/$CURRENT_DATE-$HOUR.txt"
+              git add "commits/$CURRENT_DATE-$HOUR.txt"
+              COMMIT_COUNT=$((COMMIT_COUNT + 1))
+              GIT_AUTHOR_DATE="$CURRENT_DATE $HOUR:00:00" GIT_COMMITTER_DATE="$CURRENT_DATE $HOUR:00:00" \
+              git commit -m "2021 activity #$COMMIT_COUNT"
+              sleep 1
+            done
+          done
+
+          # 2022 - Dense (every day, 1-5 commits per day, ~200 commits)
+          echo "=== 2022 (Dense - Every Day) ==="
+          START_DATE="2022-01-01"
+          DAYS_IN_YEAR=366
+          for ((day=0; day<DAYS_IN_YEAR; day++)); do
+            CURRENT_DATE=$(date -d "$START_DATE + $day days" +"%Y-%m-%d")
+            # Start with 1-2 per day, increase as year progresses
+            MAX_COMMITS=$((1 + (day * 4 / DAYS_IN_YEAR) + RANDOM % 2))
+            for ((j=1; j<=MAX_COMMITS; j++)); do
+              HOUR=$((RANDOM % 24))
+              MINUTE=$((RANDOM % 60))
+              echo "Commit at $CURRENT_DATE" > "commits/$CURRENT_DATE-$HOUR-$MINUTE.txt"
+              git add "commits/$CURRENT_DATE-$HOUR-$MINUTE.txt"
+              COMMIT_COUNT=$((COMMIT_COUNT + 1))
+              GIT_AUTHOR_DATE="$CURRENT_DATE $HOUR:$MINUTE:00" GIT_COMMITTER_DATE="$CURRENT_DATE $HOUR:$MINUTE:00" \
+              git commit -m "2022 activity #$COMMIT_COUNT"
+              sleep 1
+            done
+          done
+
+          # 2023 - Very Dense (every day, 2-8 commits per day, ~300 commits)
+          echo "=== 2023 (Very Dense - Every Day) ==="
+          START_DATE="2023-01-01"
+          DAYS_IN_YEAR=365
+          for ((day=0; day<DAYS_IN_YEAR; day++)); do
+            CURRENT_DATE=$(date -d "$START_DATE + $day days" +"%Y-%m-%d")
+            # 2-8 commits per day
+            MAX_COMMITS=$((2 + RANDOM % 7))
+            for ((j=1; j<=MAX_COMMITS; j++)); do
+              HOUR=$((RANDOM % 24))
+              MINUTE=$((RANDOM % 60))
+              SECOND=$((RANDOM % 60))
+              echo "Commit at $CURRENT_DATE" > "commits/$CURRENT_DATE-$HOUR-$MINUTE-$j.txt"
+              git add "commits/$CURRENT_DATE-$HOUR-$MINUTE-$j.txt"
+              COMMIT_COUNT=$((COMMIT_COUNT + 1))
+              GIT_AUTHOR_DATE="$CURRENT_DATE $HOUR:$MINUTE:$SECOND" GIT_COMMITTER_DATE="$CURRENT_DATE $HOUR:$MINUTE:$SECOND" \
+              git commit -m "2023 activity #$COMMIT_COUNT"
+              sleep 1
+            done
+          done
+
+          # 2024-2026 - Extremely Dense (every day, 3-10 commits per day, ~300 commits)
+          echo "=== 2024-2026 (Extremely Dense - Every Day) ==="
+          START_DATE="2024-01-01"
+          END_DATE=$(date +"%Y-%m-%d")
+          CURRENT_DATE="$START_DATE"
+          while [[ "$CURRENT_DATE" < "$END_DATE" ]]; do
+            # 3-10 commits per day
+            MAX_COMMITS=$((3 + RANDOM % 8))
+            for ((j=1; j<=MAX_COMMITS; j++)); do
+              HOUR=$((RANDOM % 24))
+              MINUTE=$((RANDOM % 60))
+              SECOND=$((RANDOM % 60))
+              echo "Commit at $CURRENT_DATE" > "commits/$CURRENT_DATE-$HOUR-$MINUTE-$j.txt"
+              git add "commits/$CURRENT_DATE-$HOUR-$MINUTE-$j.txt"
+              COMMIT_COUNT=$((COMMIT_COUNT + 1))
+              GIT_AUTHOR_DATE="$CURRENT_DATE $HOUR:$MINUTE:$SECOND" GIT_COMMITTER_DATE="$CURRENT_DATE $HOUR:$MINUTE:$SECOND" \
+              git commit -m "2024+ activity #$COMMIT_COUNT"
+              sleep 1
+            done
+            CURRENT_DATE=$(date -d "$CURRENT_DATE + 1 day" +"%Y-%m-%d")
+          done
+
+          echo ""
+          echo "Total commits created: $COMMIT_COUNT"
+          echo "Pushing all commits..."
+          git push
+
+          echo ""
+          echo "Recent commits:"
+          git log --oneline -15
